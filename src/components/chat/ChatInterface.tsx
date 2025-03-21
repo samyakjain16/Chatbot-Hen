@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import ConversationList from './ConversationList';
 import MessageList, { Message } from './MessageList';
@@ -7,8 +6,9 @@ import ChatHeader from './ChatHeader';
 import { cn } from '@/lib/utils';
 import { ArrowLeft } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { sendMessageToN8n } from '@/utils/n8nService';
+import { useToast } from '@/hooks/use-toast';
 
-// Sample data - in a real app this would come from your n8n workflow
 const sampleContacts = [
   {
     id: '1',
@@ -52,7 +52,6 @@ const sampleContacts = [
   },
 ];
 
-// Sample message history
 const sampleMessageHistory: Record<string, Message[]> = {
   '1': [
     {
@@ -146,7 +145,9 @@ const ChatInterface = () => {
   const [activeContactId, setActiveContactId] = useState<string>('1');
   const [messages, setMessages] = useState<Message[]>([]);
   const [showChat, setShowChat] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const isMobile = useIsMobile();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (activeContactId) {
@@ -157,8 +158,8 @@ const ChatInterface = () => {
     }
   }, [activeContactId, isMobile]);
 
-  const handleSendMessage = (content: string) => {
-    const newMessage: Message = {
+  const handleSendMessage = async (content: string) => {
+    const userMessage: Message = {
       id: `${activeContactId}-${Date.now()}`,
       content,
       sender: 'user',
@@ -166,46 +167,60 @@ const ChatInterface = () => {
       status: 'sent',
     };
     
-    setMessages(prev => [...prev, newMessage]);
+    setMessages(prev => [...prev, userMessage]);
+    setIsLoading(true);
     
-    // Simulate a delayed status update to "delivered"
-    setTimeout(() => {
+    try {
+      const n8nResponse = await sendMessageToN8n(content);
+      
       setMessages(prev => 
         prev.map(msg => 
-          msg.id === newMessage.id 
-            ? { ...msg, status: 'delivered' } 
+          msg.id === userMessage.id 
+            ? { ...msg, status: n8nResponse.success ? 'delivered' : 'sent' } 
             : msg
         )
       );
-    }, 1000);
-    
-    // Simulate a reply from the contact after a delay
-    setTimeout(() => {
-      const replyMessage: Message = {
-        id: `${activeContactId}-${Date.now() + 1}`,
-        content: `This is an automated reply to: "${content}"`,
-        sender: 'contact',
-        timestamp: new Date().toISOString(),
-      };
       
-      setMessages(prev => [...prev, replyMessage]);
-      
-      // Update status to "read" after reply
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.sender === 'user' && msg.status !== 'read'
-            ? { ...msg, status: 'read' } 
-            : msg
-        )
-      );
-    }, 2000);
+      if (n8nResponse.success) {
+        const responseMessage: Message = {
+          id: `${activeContactId}-${Date.now() + 1}`,
+          content: n8nResponse.message || "Message received",
+          sender: 'contact',
+          timestamp: new Date().toISOString(),
+        };
+        
+        setMessages(prev => [...prev, responseMessage]);
+        
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.sender === 'user' && msg.status !== 'read'
+              ? { ...msg, status: 'read' } 
+              : msg
+          )
+        );
+      } else {
+        toast({
+          title: "Message Delivery Failed",
+          description: n8nResponse.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error in message handling:", error);
+      toast({
+        title: "Error",
+        description: "Failed to process your message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const activeContact = sampleContacts.find(contact => contact.id === activeContactId);
 
   return (
     <div className="h-screen flex bg-background">
-      {/* Sidebar - ConversationList */}
       <div className={cn(
         "w-full md:w-80 flex-shrink-0 border-r bg-card transition-all duration-300",
         (isMobile && showChat) ? "hidden" : "block"
@@ -217,7 +232,6 @@ const ChatInterface = () => {
         />
       </div>
       
-      {/* Main chat area */}
       <div className={cn(
         "flex-1 flex flex-col transition-all duration-300",
         (isMobile && !showChat) ? "hidden" : "block"
@@ -250,6 +264,7 @@ const ChatInterface = () => {
             <MessageInput 
               onSendMessage={handleSendMessage} 
               className="flex-shrink-0"
+              isLoading={isLoading}
             />
           </>
         )}

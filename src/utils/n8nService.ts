@@ -4,11 +4,11 @@
  */
 
 // Hardcoded n8n webhook URL
-const N8N_WEBHOOK_URL = 'https://chatbot-henderson.app.n8n.cloud/webhook/test-chat';
+const N8N_WEBHOOK_URL = 'https://chatbot-henderson.app.n8n.cloud/webhook-test/chat';
 
 // Generate a random session ID if none exists in localStorage
 const getSessionId = (): string => {
-  const SESSION_ID_KEY = 'chat_session_id';
+  const SESSION_ID_KEY = 'chat_session_id;
   let sessionId = localStorage.getItem(SESSION_ID_KEY);
   
   if (!sessionId) {

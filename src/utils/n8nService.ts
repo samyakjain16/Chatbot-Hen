@@ -60,7 +60,7 @@ export const sendMessageToN8n = async (message: string): Promise<N8nResponse> =>
     
     return {
       success: true,
-      message: data.message || "Message processed",
+      message: data.output || "Message processed",
       data
     };
   } catch (error) {

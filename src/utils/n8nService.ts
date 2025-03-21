@@ -6,6 +6,19 @@
 // Hardcoded n8n webhook URL
 const N8N_WEBHOOK_URL = 'https://chatbot-henderson.app.n8n.cloud/webhook-test/chat';
 
+// Generate a random session ID if none exists in localStorage
+const getSessionId = (): string => {
+  const SESSION_ID_KEY = 'chat_session_id';
+  let sessionId = localStorage.getItem(SESSION_ID_KEY);
+  
+  if (!sessionId) {
+    sessionId = 'session_' + Math.random().toString(36).substring(2, 15);
+    localStorage.setItem(SESSION_ID_KEY, sessionId);
+  }
+  
+  return sessionId;
+};
+
 interface N8nResponse {
   message: string;
   success: boolean;
@@ -20,6 +33,7 @@ interface N8nResponse {
 export const sendMessageToN8n = async (message: string): Promise<N8nResponse> => {
   try {
     console.log("Sending message to n8n workflow:", message);
+    const sessionId = getSessionId();
     
     const response = await fetch(N8N_WEBHOOK_URL, {
       method: 'POST',
@@ -27,9 +41,13 @@ export const sendMessageToN8n = async (message: string): Promise<N8nResponse> =>
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message,
-        timestamp: new Date().toISOString(),
-        source: 'chat-interface'
+        platform: 'testing',
+        userId: 'user123',
+        userName: 'Test User',
+        message: message,
+        timestamp: Date.now(),
+        conversationId: 'conversation123',
+        sessionId: sessionId
       }),
     });
 

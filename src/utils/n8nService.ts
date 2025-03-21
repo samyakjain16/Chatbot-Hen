@@ -3,7 +3,8 @@
  * Service for integrating with n8n workflows
  */
 
-const N8N_WEBHOOK_KEY = 'n8n_webhook_url';
+// Hardcoded n8n webhook URL
+const N8N_WEBHOOK_URL = 'https://chatbot-henderson.app.n8n.cloud/webhook-test/chat';
 
 interface N8nResponse {
   message: string;
@@ -12,33 +13,15 @@ interface N8nResponse {
 }
 
 /**
- * Gets the n8n webhook URL from localStorage
- * @returns The stored webhook URL or empty string
- */
-const getWebhookUrl = (): string => {
-  return localStorage.getItem(N8N_WEBHOOK_KEY) || '';
-};
-
-/**
  * Sends a message to the n8n workflow and returns the response
  * @param message The message to send to the n8n workflow
  * @returns Promise with the n8n workflow response
  */
 export const sendMessageToN8n = async (message: string): Promise<N8nResponse> => {
-  const webhookUrl = getWebhookUrl();
-  
-  if (!webhookUrl) {
-    console.error("N8n webhook URL is not set");
-    return { 
-      success: false, 
-      message: "Please configure your n8n webhook URL in the settings" 
-    };
-  }
-  
   try {
     console.log("Sending message to n8n workflow:", message);
     
-    const response = await fetch(webhookUrl, {
+    const response = await fetch(N8N_WEBHOOK_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -66,7 +49,7 @@ export const sendMessageToN8n = async (message: string): Promise<N8nResponse> =>
     console.error("Error sending message to n8n workflow:", error);
     return {
       success: false,
-      message: "Failed to connect to n8n workflow. Please check your network connection and webhook configuration."
+      message: "Failed to connect to n8n workflow. Please check your network connection."
     };
   }
 };

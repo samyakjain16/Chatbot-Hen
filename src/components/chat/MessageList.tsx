@@ -1,14 +1,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-
-export interface Message {
-  id: string;
-  content: string;
-  sender: 'user' | 'contact';
-  timestamp: string;
-  status?: 'sent' | 'delivered' | 'read';
-}
+import { Message } from '@/data/sampleChatData';
 
 interface MessageListProps {
   messages: Message[];

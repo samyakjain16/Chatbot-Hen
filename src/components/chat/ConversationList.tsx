@@ -2,16 +2,7 @@
 import React from 'react';
 import { User, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface Contact {
-  id: string;
-  name: string;
-  avatar?: string;
-  lastMessage: string;
-  time: string;
-  unread: number;
-  online: boolean;
-}
+import { Contact } from '@/data/sampleChatData';
 
 interface ConversationListProps {
   contacts: Contact[];

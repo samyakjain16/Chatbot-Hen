@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useChat } from '@/hooks/use-chat';
 import ConversationList from './ConversationList';
 import ChatView from './ChatView';
 import { Contact, Message } from '@/data/sampleChatData';
@@ -19,12 +18,11 @@ const ChatInterface = () => {
   });
   
   const [activeContactId, setActiveContactId] = useState<string>('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const isMobile = useIsMobile();
   const { toast } = useToast();
-  
-  // Initialize useChat without initial messages - we'll set them when contact changes
-  const { messages, setMessages, isLoading, sendMessage } = useChat();
 
   // Load conversations from localStorage when component mounts
   useEffect(() => {
@@ -39,9 +37,36 @@ const ChatInterface = () => {
     localStorage.setItem('conversations', JSON.stringify(conversations));
   }, [conversations]);
 
-  // Update localStorage when messages change
+  // Load messages for the active conversation
+  useEffect(() => {
+    if (activeContactId) {
+      console.log(`Loading messages for contact: ${activeContactId}`);
+      
+      // Get messages for this contact from localStorage
+      const savedMessages = localStorage.getItem('messageHistory') || '{}';
+      const messageHistory = JSON.parse(savedMessages);
+      
+      // This is where we load the messages for the selected contact
+      const contactMessages = messageHistory[activeContactId] || [];
+      console.log(`Found ${contactMessages.length} messages for this contact`);
+      
+      // Set messages in state
+      setMessages(contactMessages);
+      
+      if (isMobile) {
+        setShowChat(true);
+      }
+    } else {
+      // Reset messages when no active contact
+      setMessages([]);
+    }
+  }, [activeContactId, isMobile]);
+
+  // Save messages to localStorage when they change
   useEffect(() => {
     if (activeContactId && messages.length > 0) {
+      console.log(`Saving ${messages.length} messages for contact: ${activeContactId}`);
+      
       const savedMessages = localStorage.getItem('messageHistory') || '{}';
       const messageHistory = JSON.parse(savedMessages);
       messageHistory[activeContactId] = messages;
@@ -49,31 +74,22 @@ const ChatInterface = () => {
     }
   }, [messages, activeContactId]);
 
-  // Load messages for the active conversation
-  useEffect(() => {
-    if (activeContactId) {
-      // Get messages for this contact from localStorage
-      const savedMessages = localStorage.getItem('messageHistory') || '{}';
-      const messageHistory = JSON.parse(savedMessages);
-      
-      // This is where we load the messages for the selected contact
-      const contactMessages = messageHistory[activeContactId] || [];
-      
-      // Set messages in the chat hook
-      setMessages(contactMessages);
-      
-      if (isMobile) {
-        setShowChat(true);
-      }
-      
-      console.log(`Loaded ${contactMessages.length} messages for contact ${activeContactId}`);
-    }
-  }, [activeContactId, setMessages, isMobile]);
-
-  const handleSendMessage = (content: string) => {
-    if (!activeContactId) return;
+  const sendMessage = useCallback(async (content: string) => {
+    if (!content.trim() || !activeContactId) return;
     
-    sendMessage(content, activeContactId);
+    setIsLoading(true);
+    
+    // Create a new message object
+    const newMessage: Message = {
+      id: `${activeContactId}-${Date.now()}`,
+      content,
+      sender: 'user',
+      timestamp: new Date().toISOString(),
+      status: 'sent',
+    };
+    
+    // Add message to the state
+    setMessages(prevMessages => [...prevMessages, newMessage]);
     
     // Update last message in conversation list
     setConversations(prev => 
@@ -88,9 +104,23 @@ const ChatInterface = () => {
           : conv
       )
     );
-  };
+    
+    // Simulate response (replace with actual API call)
+    setTimeout(() => {
+      const responseMessage: Message = {
+        id: `${activeContactId}-${Date.now() + 1}`,
+        content: `Reply to: ${content}`,
+        sender: 'contact',
+        timestamp: new Date().toISOString(),
+      };
+      
+      setMessages(prevMessages => [...prevMessages, responseMessage]);
+      setIsLoading(false);
+    }, 1000);
+    
+  }, [activeContactId]);
 
-  const createNewChat = () => {
+  const createNewChat = useCallback(() => {
     const newChatId = generateId();
     const newChat: Contact = {
       id: newChatId,
@@ -110,9 +140,9 @@ const ChatInterface = () => {
     const messageHistory = JSON.parse(savedMessages);
     messageHistory[newChatId] = [];
     localStorage.setItem('messageHistory', JSON.stringify(messageHistory));
-  };
+  }, [conversations]);
 
-  const handleDeleteChat = (contactId: string) => {
+  const handleDeleteChat = useCallback((contactId: string) => {
     // Remove the conversation from state
     setConversations(prev => prev.filter(conv => conv.id !== contactId));
     
@@ -133,7 +163,7 @@ const ChatInterface = () => {
       title: "Chat deleted",
       description: "The conversation has been removed",
     });
-  };
+  }, [activeContactId, toast]);
 
   const activeContact = conversations.find(contact => contact.id === activeContactId);
 
@@ -146,7 +176,10 @@ const ChatInterface = () => {
         <ConversationList 
           contacts={conversations}
           activeContactId={activeContactId}
-          onSelectContact={setActiveContactId}
+          onSelectContact={(id) => {
+            console.log(`Selecting contact: ${id}`);
+            setActiveContactId(id);
+          }}
           onNewChat={createNewChat}
           onDeleteChat={handleDeleteChat}
         />
@@ -164,7 +197,7 @@ const ChatInterface = () => {
               online: activeContact.online
             }}
             messages={messages}
-            onSendMessage={handleSendMessage}
+            onSendMessage={sendMessage}
             onBackClick={() => setShowChat(false)}
             isLoading={isLoading}
             showBackButton={isMobile}

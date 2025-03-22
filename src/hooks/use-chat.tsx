@@ -1,15 +1,19 @@
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Message } from '@/data/sampleChatData';
 import { sendMessageToN8n } from '@/utils/n8nService';
 import { useToast } from '@/hooks/use-toast';
 
 export function useChat(initialMessages: Message[] = []) {
+  // Initialize with empty array or initial messages if provided
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const sendMessage = async (content: string, activeContactId: string) => {
+    if (!content.trim() || !activeContactId) {
+      return;
+    }
+    
     const userMessage: Message = {
       id: `${activeContactId}-${Date.now()}`,
       content,
@@ -18,12 +22,14 @@ export function useChat(initialMessages: Message[] = []) {
       status: 'sent',
     };
     
+    // Add the user message to the chat
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
     
     try {
       const n8nResponse = await sendMessageToN8n(content);
       
+      // Update message status
       setMessages(prev => 
         prev.map(msg => 
           msg.id === userMessage.id 
@@ -33,6 +39,7 @@ export function useChat(initialMessages: Message[] = []) {
       );
       
       if (n8nResponse.success) {
+        // Create response message
         const responseMessage: Message = {
           id: `${activeContactId}-${Date.now() + 1}`,
           content: n8nResponse.message || "Message received",
@@ -40,8 +47,10 @@ export function useChat(initialMessages: Message[] = []) {
           timestamp: new Date().toISOString(),
         };
         
+        // Add the response message
         setMessages(prev => [...prev, responseMessage]);
         
+        // Update all user messages as read
         setMessages(prev => 
           prev.map(msg => 
             msg.sender === 'user' && msg.status !== 'read'

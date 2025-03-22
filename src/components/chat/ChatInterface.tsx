@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -22,6 +21,7 @@ const ChatInterface = () => {
   const [showChat, setShowChat] = useState(false);
   const isMobile = useIsMobile();
   
+  // Initialize useChat without initial messages - we'll set them when contact changes
   const { messages, setMessages, isLoading, sendMessage } = useChat();
 
   // Load conversations from localStorage when component mounts
@@ -29,14 +29,6 @@ const ChatInterface = () => {
     const savedConversations = localStorage.getItem('conversations');
     if (savedConversations) {
       setConversations(JSON.parse(savedConversations));
-    }
-    
-    const savedMessages = localStorage.getItem('messageHistory');
-    if (savedMessages) {
-      const messageHistory = JSON.parse(savedMessages);
-      if (activeContactId && messageHistory[activeContactId]) {
-        setMessages(messageHistory[activeContactId]);
-      }
     }
   }, []);
 
@@ -47,7 +39,7 @@ const ChatInterface = () => {
 
   // Update localStorage when messages change
   useEffect(() => {
-    if (activeContactId) {
+    if (activeContactId && messages.length > 0) {
       const savedMessages = localStorage.getItem('messageHistory') || '{}';
       const messageHistory = JSON.parse(savedMessages);
       messageHistory[activeContactId] = messages;
@@ -58,17 +50,27 @@ const ChatInterface = () => {
   // Load messages for the active conversation
   useEffect(() => {
     if (activeContactId) {
+      // Get messages for this contact from localStorage
       const savedMessages = localStorage.getItem('messageHistory') || '{}';
       const messageHistory = JSON.parse(savedMessages);
-      setMessages(messageHistory[activeContactId] || []);
+      
+      // This is where we load the messages for the selected contact
+      const contactMessages = messageHistory[activeContactId] || [];
+      
+      // Set messages in the chat hook
+      setMessages(contactMessages);
       
       if (isMobile) {
         setShowChat(true);
       }
+      
+      console.log(`Loaded ${contactMessages.length} messages for contact ${activeContactId}`);
     }
-  }, [activeContactId, isMobile, setMessages]);
+  }, [activeContactId, setMessages, isMobile]);
 
   const handleSendMessage = (content: string) => {
+    if (!activeContactId) return;
+    
     sendMessage(content, activeContactId);
     
     // Update last message in conversation list

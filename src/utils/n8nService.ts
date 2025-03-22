@@ -35,13 +35,11 @@ export const sendMessageToN8n = async (message: string): Promise<N8nResponse> =>
     console.log("Sending message to n8n workflow:", message);
     const sessionId = getSessionId();
     
-    // Option 1: Using no-cors mode (note: this will return an opaque response)
     const response = await fetch(N8N_WEBHOOK_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      mode: 'no-cors', // Add this to handle CORS restrictions
       body: JSON.stringify({
         platform: 'testing',
         userId: 'user123',
@@ -53,14 +51,17 @@ export const sendMessageToN8n = async (message: string): Promise<N8nResponse> =>
       }),
     });
 
-    // With no-cors mode, we can't access the response content
-    // So we'll need to provide a default response
-    console.log("Request sent with no-cors mode");
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Received response from n8n workflow:", data);
     
     return {
       success: true,
-      message: "Message sent to n8n workflow. Response not available due to CORS restrictions.",
-      data: { output: message } // Echo back the message as default behavior
+      message: data.output || "Message processed",
+      data
     };
   } catch (error) {
     console.error("Error sending message to n8n workflow:", error);

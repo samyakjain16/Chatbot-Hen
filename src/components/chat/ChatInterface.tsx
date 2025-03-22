@@ -6,6 +6,7 @@ import ConversationList from './ConversationList';
 import ChatView from './ChatView';
 import { Contact, Message } from '@/data/sampleChatData';
 import { PlusCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 // Generate a random ID for new conversations
 const generateId = () => `chat_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -20,6 +21,7 @@ const ChatInterface = () => {
   const [activeContactId, setActiveContactId] = useState<string>('');
   const [showChat, setShowChat] = useState(false);
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   
   // Initialize useChat without initial messages - we'll set them when contact changes
   const { messages, setMessages, isLoading, sendMessage } = useChat();
@@ -110,6 +112,29 @@ const ChatInterface = () => {
     localStorage.setItem('messageHistory', JSON.stringify(messageHistory));
   };
 
+  const handleDeleteChat = (contactId: string) => {
+    // Remove the conversation from state
+    setConversations(prev => prev.filter(conv => conv.id !== contactId));
+    
+    // Remove the message history for this conversation
+    const savedMessages = localStorage.getItem('messageHistory') || '{}';
+    const messageHistory = JSON.parse(savedMessages);
+    delete messageHistory[contactId];
+    localStorage.setItem('messageHistory', JSON.stringify(messageHistory));
+    
+    // If the active conversation is being deleted, clear the active contact
+    if (activeContactId === contactId) {
+      setActiveContactId('');
+      setMessages([]);
+    }
+    
+    // Show confirmation toast
+    toast({
+      title: "Chat deleted",
+      description: "The conversation has been removed",
+    });
+  };
+
   const activeContact = conversations.find(contact => contact.id === activeContactId);
 
   return (
@@ -123,6 +148,7 @@ const ChatInterface = () => {
           activeContactId={activeContactId}
           onSelectContact={setActiveContactId}
           onNewChat={createNewChat}
+          onDeleteChat={handleDeleteChat}
         />
       </div>
       

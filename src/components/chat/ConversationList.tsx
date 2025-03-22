@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { User, Search } from 'lucide-react';
+import { User, Search, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Contact } from '@/data/sampleChatData';
 
@@ -8,6 +8,7 @@ interface ConversationListProps {
   contacts: Contact[];
   activeContactId: string;
   onSelectContact: (contactId: string) => void;
+  onNewChat: () => void;
   className?: string;
 }
 
@@ -15,6 +16,7 @@ const ConversationList = ({
   contacts,
   activeContactId,
   onSelectContact,
+  onNewChat,
   className
 }: ConversationListProps) => {
   return (
@@ -36,50 +38,67 @@ const ConversationList = ({
         </div>
       </div>
       
+      <div className="p-3">
+        <button 
+          onClick={onNewChat}
+          className="flex items-center w-full gap-2 px-4 py-3 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+        >
+          <PlusCircle className="h-5 w-5" />
+          <span className="font-medium">New Chat</span>
+        </button>
+      </div>
+      
       <div className="overflow-y-auto flex-1">
-        {contacts.map((contact) => (
-          <div 
-            key={contact.id}
-            className={cn(
-              "flex items-center p-4 cursor-pointer transition-all duration-200",
-              activeContactId === contact.id 
-                ? "bg-primary/5 border-l-2 border-primary" 
-                : "hover:bg-secondary/80 border-l-2 border-transparent"
-            )}
-            onClick={() => onSelectContact(contact.id)}
-          >
-            <div className="relative mr-3 flex-shrink-0">
-              {contact.avatar ? (
-                <img 
-                  src={contact.avatar} 
-                  alt={contact.name} 
-                  className="user-avatar"
-                />
-              ) : (
-                <div className="user-avatar flex items-center justify-center bg-primary/10 text-primary">
-                  {contact.name.charAt(0).toUpperCase()}
-                </div>
+        {contacts.length === 0 ? (
+          <div className="p-6 text-center text-muted-foreground">
+            <p>No conversations yet</p>
+            <p className="text-sm mt-1">Start a new chat to begin</p>
+          </div>
+        ) : (
+          contacts.map((contact) => (
+            <div 
+              key={contact.id}
+              className={cn(
+                "flex items-center p-4 cursor-pointer transition-all duration-200",
+                activeContactId === contact.id 
+                  ? "bg-primary/5 border-l-2 border-primary" 
+                  : "hover:bg-secondary/80 border-l-2 border-transparent"
               )}
-              {contact.online && (
-                <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-white"></span>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-baseline">
-                <h3 className="font-medium truncate">{contact.name}</h3>
-                <span className="text-xs text-muted-foreground">{contact.time}</span>
-              </div>
-              <div className="flex justify-between items-center mt-1">
-                <p className="text-sm text-muted-foreground truncate">{contact.lastMessage}</p>
-                {contact.unread > 0 && (
-                  <span className="bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center ml-2">
-                    {contact.unread}
-                  </span>
+              onClick={() => onSelectContact(contact.id)}
+            >
+              <div className="relative mr-3 flex-shrink-0">
+                {contact.avatar ? (
+                  <img 
+                    src={contact.avatar} 
+                    alt={contact.name} 
+                    className="user-avatar"
+                  />
+                ) : (
+                  <div className="user-avatar flex items-center justify-center bg-primary/10 text-primary">
+                    {contact.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                {contact.online && (
+                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-white"></span>
                 )}
               </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-baseline">
+                  <h3 className="font-medium truncate">{contact.name}</h3>
+                  <span className="text-xs text-muted-foreground">{contact.time}</span>
+                </div>
+                <div className="flex justify-between items-center mt-1">
+                  <p className="text-sm text-muted-foreground truncate">{contact.lastMessage}</p>
+                  {contact.unread > 0 && (
+                    <span className="bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center ml-2">
+                      {contact.unread}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

@@ -48,11 +48,35 @@ export const sendMessageToN8n = async (message: string): Promise<N8nResponse> =>
     
     console.log("Request payload:", payload);
     
-    // Directly use no-cors mode since we know there are CORS issues
-    // This won't return a readable response, but it will send the request
-    console.log("Using no-cors mode for n8n webhook request");
-    
     try {
+      // Try to make a regular request first
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      // Parse the response if successful
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Received response from n8n workflow:", data);
+        
+        return {
+          success: true,
+          message: data.output || data.message || "Message processed",
+          data
+        };
+      } else {
+        console.warn("Response not ok:", response.status);
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+    } catch (fetchError) {
+      console.warn("Regular fetch failed, attempting fallback:", fetchError);
+      
+      // If CORS or other issues, try with no-cors as a fallback
+      console.log("Attempting with no-cors mode");
       await fetch(N8N_WEBHOOK_URL, {
         method: 'POST',
         headers: {
@@ -62,31 +86,14 @@ export const sendMessageToN8n = async (message: string): Promise<N8nResponse> =>
         mode: 'no-cors'
       });
       
-      // Since we can't read the response in no-cors mode, we'll simulate a response
-      console.log("Request sent in no-cors mode");
-      
-      // Create a simulated response based on the message
-      // You can customize this to provide appropriate responses to common messages
-      let simulatedResponse = `I received your message: "${message}"`;
-      if (message.toLowerCase().includes('hello') || message.toLowerCase().includes('hi')) {
-        simulatedResponse = "Hello there! How can I help you today?";
-      } else if (message.toLowerCase().includes('help')) {
-        simulatedResponse = "I'm here to help! What do you need assistance with?";
-      } else if (message.toLowerCase().includes('thank')) {
-        simulatedResponse = "You're welcome! Let me know if there's anything else you need.";
-      }
-      
+      // Since no-cors won't give us a readable response, return a default
       return {
         success: true,
-        message: simulatedResponse,
+        message: `Message sent to n8n. Awaiting response.`,
         data: {
-          message: message,
-          response: simulatedResponse
+          message: message
         }
       };
-    } catch (fetchError) {
-      console.error("Fetch error with no-cors mode:", fetchError);
-      throw fetchError;
     }
   } catch (error) {
     console.error("Error sending message to n8n workflow:", error);

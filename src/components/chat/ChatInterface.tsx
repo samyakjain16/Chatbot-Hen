@@ -6,6 +6,7 @@ import ChatView from './ChatView';
 import { Contact, Message } from '@/data/sampleChatData';
 import { PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { sendMessageToN8n } from '@/utils/n8nService';
 
 // Generate a random ID for new conversations
 const generateId = () => `chat_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -80,7 +81,7 @@ const ChatInterface = () => {
     setIsLoading(true);
     
     // Create a new message object
-    const newMessage: Message = {
+    const userMessage: Message = {
       id: `${activeContactId}-${Date.now()}`,
       content,
       sender: 'user',
@@ -88,8 +89,8 @@ const ChatInterface = () => {
       status: 'sent',
     };
     
-    // Add message to the state
-    setMessages(prevMessages => [...prevMessages, newMessage]);
+    // Add user message to state
+    setMessages(prevMessages => [...prevMessages, userMessage]);
     
     // Update last message in conversation list
     setConversations(prev => 
@@ -105,20 +106,57 @@ const ChatInterface = () => {
       )
     );
     
-    // Simulate response (replace with actual API call)
-    setTimeout(() => {
-      const responseMessage: Message = {
-        id: `${activeContactId}-${Date.now() + 1}`,
-        content: `Reply to: ${content}`,
-        sender: 'contact',
-        timestamp: new Date().toISOString(),
-      };
+    try {
+      // Send message to n8n workflow
+      const n8nResponse = await sendMessageToN8n(content);
       
-      setMessages(prevMessages => [...prevMessages, responseMessage]);
+      // Update message status
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === userMessage.id 
+            ? { ...msg, status: n8nResponse.success ? 'delivered' : 'sent' } 
+            : msg
+        )
+      );
+      
+      if (n8nResponse.success) {
+        // Create response message from n8n
+        const responseMessage: Message = {
+          id: `${activeContactId}-${Date.now() + 1}`,
+          content: n8nResponse.message || "Message received",
+          sender: 'contact',
+          timestamp: new Date().toISOString(),
+        };
+        
+        // Add the response message
+        setMessages(prev => [...prev, responseMessage]);
+        
+        // Update all user messages as read
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.sender === 'user' && msg.status !== 'read'
+              ? { ...msg, status: 'read' } 
+              : msg
+          )
+        );
+      } else {
+        toast({
+          title: "Message Delivery Failed",
+          description: n8nResponse.message || "Failed to process your message",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error in message handling:", error);
+      toast({
+        title: "Error",
+        description: "Failed to process your message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
-    
-  }, [activeContactId]);
+    }
+  }, [activeContactId, toast]);
 
   const createNewChat = useCallback(() => {
     const newChatId = generateId();

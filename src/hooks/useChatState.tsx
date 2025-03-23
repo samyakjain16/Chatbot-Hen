@@ -153,9 +153,10 @@ export const useChatState = () => {
 
   const createNewChat = useCallback(() => {
     const newChatId = generateId();
+    const chatNumber = conversations.length + 1;
     const newChat: Contact = {
       id: newChatId,
-      name: `Chat ${conversations.length + 1}`,
+      name: `Jack ${chatNumber}`,
       lastMessage: 'New conversation',
       time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
       unread: 0,
@@ -210,3 +211,4 @@ export const useChatState = () => {
     activeContact: conversations.find(contact => contact.id === activeContactId)
   };
 };
+

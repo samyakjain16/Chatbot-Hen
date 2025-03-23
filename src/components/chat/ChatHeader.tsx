@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Download, FileDown } from 'lucide-react';
+import { FileDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -91,12 +91,13 @@ const ChatHeader = ({ contact, className, messages = [] }: ChatHeaderProps) => {
       <div className="flex items-center">
         <Button 
           variant="ghost" 
-          size="icon" 
+          size="sm" 
           onClick={handleExportChat}
-          className="text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex items-center gap-1.5"
           title="Export chat"
         >
-          <FileDown className="h-5 w-5" />
+          <FileDown className="h-4 w-4" />
+          <span className="text-sm">Export</span>
         </Button>
       </div>
     </div>

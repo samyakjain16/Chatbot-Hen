@@ -39,6 +39,7 @@ const ChatView = ({
           lastSeen: !contact.online ? '10 minutes ago' : undefined,
         }}
         className="flex-shrink-0"
+        messages={messages}
       />
       
       {showBackButton && (

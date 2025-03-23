@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Send, Mic } from 'lucide-react';
+import { Send } from 'lucide-react';
 
 interface MessageInputProps {
   onSendMessage: (content: string) => void;
@@ -21,8 +20,8 @@ const MessageInput = ({ onSendMessage, className, isLoading = false }: MessageIn
   };
 
   return (
-    <form 
-      onSubmit={handleSubmit} 
+    <form
+      onSubmit={handleSubmit}
       className={cn("flex items-center gap-2 p-4 bg-background border-t", className)}
     >
       <div className="relative flex-1">
@@ -35,23 +34,18 @@ const MessageInput = ({ onSendMessage, className, isLoading = false }: MessageIn
           disabled={isLoading}
         />
       </div>
-      
-      {message.trim() && !isLoading ? (
-        <button
-          type="submit"
-          className="p-3 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-        >
-          <Send className="h-5 w-5" />
-        </button>
-      ) : (
-        <button
-          type="button"
-          className="p-3 rounded-full hover:bg-secondary transition-colors"
-          disabled={isLoading}
-        >
-          <Mic className="h-5 w-5 text-muted-foreground" />
-        </button>
-      )}
+      <button
+        type="submit"
+        className={cn(
+          "p-3 rounded-full transition-colors", 
+          message.trim() && !isLoading 
+            ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+            : "bg-secondary text-secondary-foreground opacity-50 cursor-not-allowed"
+        )}
+        disabled={!message.trim() || isLoading}
+      >
+        <Send className="h-5 w-5" />
+      </button>
     </form>
   );
 };

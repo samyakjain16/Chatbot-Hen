@@ -1,7 +1,9 @@
 
 import React from 'react';
-import { Phone, Video, Info } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface ChatHeaderProps {
   contact: {
@@ -14,7 +16,16 @@ interface ChatHeaderProps {
   className?: string;
 }
 
-const ChatHeader = ({ contact, onInfoClick, className }: ChatHeaderProps) => {
+const ChatHeader = ({ contact, className }: ChatHeaderProps) => {
+  const { toast } = useToast();
+
+  const handleExportChat = () => {
+    toast({
+      title: "Chat Exported",
+      description: "Your conversation has been exported successfully",
+    });
+  };
+
   return (
     <div className={cn("flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10", className)}>
       <div className="flex items-center">
@@ -41,19 +52,15 @@ const ChatHeader = ({ contact, onInfoClick, className }: ChatHeaderProps) => {
           </p>
         </div>
       </div>
-      <div className="flex items-center space-x-2">
-        <button className="p-2 rounded-full hover:bg-secondary transition-colors">
-          <Phone className="h-5 w-5 text-muted-foreground" />
-        </button>
-        <button className="p-2 rounded-full hover:bg-secondary transition-colors">
-          <Video className="h-5 w-5 text-muted-foreground" />
-        </button>
-        <button 
-          className="p-2 rounded-full hover:bg-secondary transition-colors"
-          onClick={onInfoClick}
+      <div className="flex items-center">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={handleExportChat}
+          className="text-muted-foreground hover:text-foreground"
         >
-          <Info className="h-5 w-5 text-muted-foreground" />
-        </button>
+          <Download className="h-5 w-5" />
+        </Button>
       </div>
     </div>
   );
